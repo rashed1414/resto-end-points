@@ -1,9 +1,15 @@
 global using ResturantEndPoints.Models;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using ResturantEndPoints.Services.FoodService;
 using ResturantEndPoints.Services.OrderService;
 using ResturantEndPoints.Services.StaffService;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using ResturantEndPoints.Data;
+using ResturantEndPoints.Repositories;
+using Swashbuckle.AspNetCore.Filters;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,11 +21,35 @@ builder.Services.AddDbContext<DataContext>(options =>
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new() { Title = "ResturantEndPoints", Version = "v1" });
+    c.AddSecurityDefinition("oauth2",new OpenApiSecurityScheme{
+        Description = "Standard Authorization header using the Bearer scheme. Example: \"bearer {token}\"",
+        In = ParameterLocation.Header,
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey
+    });
+    c.OperationFilter<SecurityRequirementsOperationFilter>();
+});
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 builder.Services.AddScoped<IFoodService, FoodService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII
+                .GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
 
 var app = builder.Build();
 
@@ -32,6 +62,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
