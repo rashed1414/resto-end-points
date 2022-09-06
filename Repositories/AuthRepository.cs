@@ -8,6 +8,7 @@ namespace ResturantEndPoints.Repositories
 {
     public class AuthRepository : IAuthRepository
     {
+        // TODO
 
         private readonly DataContext _context;
 
@@ -16,8 +17,7 @@ namespace ResturantEndPoints.Repositories
         }
         public async Task<ServiceResponse<string>> LogIn(string email, string password)
         {
-            var response = new ServiceResponse<string>();
-            
+            return null;
         }
 
         public async Task<ServiceResponse<int>> Register(Staff user, string password)
